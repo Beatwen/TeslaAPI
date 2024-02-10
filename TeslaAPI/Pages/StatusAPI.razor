@@ -1,0 +1,43 @@
+﻿@page "/statut-api"
+@using System;
+@using System.Net.Http;
+@using System.Threading.Tasks;
+@using System.Diagnostics;
+
+
+<h3>Tesla API Status</h3>
+<p>@apiStatusMessage</p>
+
+@code {
+    private string apiStatusMessage = "Checking Tesla API status...";
+
+    private async Task CheckApiStatus()
+    {
+        using (var client = new HttpClient())
+        {
+            try
+            {
+                var response = await client.GetAsync("https://fleet-api.prd.eu.vn.cloud.tesla.com/status");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    apiStatusMessage = await response.Content.ReadAsStringAsync();
+                }
+                else
+                {
+                    apiStatusMessage = $"Error: {response.StatusCode}";
+                }
+            }
+            catch (Exception ex)
+            {
+                apiStatusMessage = $"Exception: {ex.Message}";
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Debug.Print("Checking Tesla API status...");
+        await CheckApiStatus();
+    }
+}

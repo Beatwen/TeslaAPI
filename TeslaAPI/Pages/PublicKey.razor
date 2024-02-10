@@ -1,0 +1,12 @@
+﻿@page "/.well-known/appspecific/com.tesla.3p.public-key.pem"
+@using TeslaAPI.Component;
+@functions {
+    private string ecPublicKey = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE635xi2MkA0mhCLo2ZMQEbA3HgrMimEtHj5we3lSN+Nt+snVnZJxM9VvqYjzGbHSKoMnqnaiylHJgdbUSPWXWxw==";
+
+    protected override void OnInitialized()
+    {
+    }
+}
+
+<h1>EC Public Key</h1>
+<pre>@ecPublicKey</pre>

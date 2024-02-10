@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Component\Component.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Component\Component.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="7.0.15" />
+	<PackageReference Include="IdentityModel" Version="5.1.0" />
+  </ItemGroup>
+
+</Project>
