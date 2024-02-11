@@ -8,13 +8,15 @@
 @using System.Diagnostics;
 @using System.Text;
 @using IdentityModel;
-
+@using Microsoft.Extensions.DependencyInjection;
+@using Microsoft.JSInterop;
+@inject IJSRuntime jsRuntime;
 <h3>Tesla Control Test</h3>
-<button @onclick="GetTeslaCode">Get Tesla Code</button>
+<button>Get Tesla Code</button>
 <p>@response</p>
-<button @onclick="RegisterVehicle">Register Vehicles</button>
-<button @onclick="GetTags">Get Tesla Tag</button>
-<button @onclick="Horn">Horn it up !</button>
+<button>Register Vehicles</button>
+<button>Get Tesla Tag</button>
+<button>Horn it up !</button>
 <p>@ShowVehicleTags</p>
 
 
@@ -26,214 +28,151 @@
     [Inject]
     private NavigationManager? NavigationManager { get; set; }
     private HttpClient _httpClient; // HttpClient instance for making API requests
-    string? token;
-    string? accessToken;
-    string redirectUrl = "https://6cfb-91-183-232-210.ngrok-free.app/oauth-callback";
-
-    async Task GetTeslaCode()
-    {
-        // Step 1: Generate code verifier, code challenge, and state
-        string codeVerifier = Code.GenerateRandomString(86);
-        string codeChallenge = Code.Base64UrlEncode(Code.Sha256(codeVerifier));
-        string state = Code.GenerateRandomString(32);
+    string? userToken;
 
 
-        // Step 2: Build the authorization URL
-        string authorizeUrl = $"https://auth.tesla.com/oauth2/v3/authorize?&client_id=285b750b0c21-49a2-a9af-c44c1f100566&locale=en-US&prompt=login&redirect_uri={redirectUrl}&response_type=code&scope=openid%20offline_access%20user_data%20vehicle_device_data%20vehicle_cmds%20vehicle_charging_cmds&state={state}";
-
-        // Step 3: Create an HttpClient and add the ngrok-skip-browser-warning header
-        using (var client = new HttpClient())
-        {
-            client.DefaultRequestHeaders.Add("ngrok-skip-browser-warning", "true");
-
-            // Debugging: Log the headers before making the request
-            foreach (var header in client.DefaultRequestHeaders)
-            {
-                Debug.Print($"Request Header: {header.Key}: {string.Join(", ", header.Value)}");
-            }
-            // Navigate the user to the Tesla login page
-            NavigationManager.NavigateTo(authorizeUrl); // This line navigates the user to Tesla's login page
-        }
-    }
     protected override async Task OnInitializedAsync()
     {
         var uri = new Uri(NavigationManager.Uri);
         Debug.Print("URI: " + uri);
         var code = System.Web.HttpUtility.ParseQueryString(uri.Query).Get("code");
         Debug.Print("Code: " + code);
-        string expectedCallbackUrl = "https://6cfb-91-183-232-210.ngrok-free.app/oauth-callback";
-
-        if (!string.IsNullOrWhiteSpace(code) && uri.AbsoluteUri.StartsWith(expectedCallbackUrl))
+        if (!string.IsNullOrWhiteSpace(code))
         {
-            // Debugging: Log the successful callback
             Debug.Print("OAuth callback successful.");
-            // You have the authorization code, proceed with token exchange
-            token = await ExchangeAuthorizationCodeForToken(code);
-        }
-        else
-        {
-            // Debugging: Log the failed callback
-            Debug.Print("OAuth callback failed.");
-            response = "Authorization failed or state mismatch.";
-        }
-        Debug.Print("Initialisation");
-        partnerToken = await PartnerToken.GetPartnerToken(); 
-    }
-    async Task RegisterVehicle()
-    {
-        try
-        {
-            accessToken = partnerToken;
-            Debug.Print("Access Token = " + accessToken);
+            userToken = await UserToken.GenerateUserToken(code,jsRuntime);
 
-            if (string.IsNullOrWhiteSpace(accessToken))
+            Debug.Print("le token " + userToken);
+            if (!string.IsNullOrWhiteSpace(userToken))
             {
-                Debug.Print("Access token is missing. Please obtain the access token first.");
-                return;
-            }
-
-            string registerEndpoint = "https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/partner_accounts";
-
-            // Create a payload for the registration request
-            var payload = new
-            {
-                domain = "7d8b-2a02-2788-11c4-afd-d045-b4de-1049-d1ad.ngrok-free.app"
-            };
-
-            // Serialize the payload to JSON
-            var payloadJson = JsonSerializer.Serialize(payload);
-
-            // Create an HttpClient instance
-            using (var httpClient = new HttpClient())
-            {
-                // Add the Bearer token to the request headers
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                // Send the registration request
-                var response = await httpClient.PostAsync(registerEndpoint, new StringContent(payloadJson, Encoding.UTF8, "application/json"));
-
-                if (response.IsSuccessStatusCode)
-                {
-                    // Registration successful
-                    Debug.Print("Vehicle registration successful.");
-                }
-                else if (response.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    // Registration failed with a 400 Bad Request status code
-                    Debug.Print("Response Content: " + await response.Content.ReadAsStringAsync());
-
-                    // Read the error response content
-                    var errorResponseContent = await response.Content.ReadAsStringAsync();
-
-                    try
-                    {
-                        // Deserialize the error response to an object (if it's in JSON format)
-                        var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(errorResponseContent);
-
-                        // Access and print the error details
-                        Debug.Print("Error Code: " + errorResponse.error_code);
-                        Debug.Print("Error Description: " + errorResponse.error_description);
-                    }
-                    catch (JsonException)
-                    {
-                        // If the error response is not in JSON format, just print the raw content
-                        Debug.Print("Error Response Content: " + errorResponseContent);
-                    }
-                }
-                else
-                {
-                    // Handle other status codes or errors as needed
-                    Debug.Print("Vehicle registration failed. Status code: " + (int)response.StatusCode);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.Print("Exception during vehicle registration: " + ex.Message);
-        }
-    }
-
-    async Task GetTags()
-    {
-        string accessTokenJSON = token;
-        accessToken = GetAccessTokenValue(accessTokenJSON);
-        Debug.Print("access Token = " + accessToken);
-        var GetTag = new GetTag(accessToken);
-        vehicleTag = await GetTag.GetVehicleId();
-        Debug.Print("debugici" + vehicleTag);
-        if (vehicleTag != null)
-        {
-            Debug.Print($"Vehicle Tag: {vehicleTag}");
-            ShowVehicleTags = "Vehicle Tag: " + vehicleTag;
-        }
-    }
-async Task Horn()
-    {
-        string accessTokenJSON = token;
-        accessToken = GetAccessTokenValue(accessTokenJSON);
-        Debug.Print("access Token = " + accessToken);
-        var horn = new GetTag(accessToken);
-        Debug.Print("vehicleTag" + vehicleTag);
-        string hornReturn = await horn.HonkHornAsync(vehicleTag);
-        Debug.Print("L'id voiture : " + hornReturn);
-    }
-    private string GetAccessTokenValue(string accessTokenJson)
-    {
-        try
-        {
-            var jsonDocument = JsonDocument.Parse(accessTokenJson);
-            var root = jsonDocument.RootElement;
-
-            // Access the access_token property
-            if (root.TryGetProperty("access_token", out var accessTokenProperty))
-            {
-                string accessToken = accessTokenProperty.GetString();
-                return accessToken;
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.Print($"Exception: {ex.Message}");
-        }
-
-        return null;
-    }
-    async Task<string> ExchangeAuthorizationCodeForToken(string authorizationCode)
-    {
-        // Replace these placeholders with your actual values
-        string tokenEndpoint = "https://auth.tesla.com/oauth2/v3/token";
-        string clientId = "285b750b0c21-49a2-a9af-c44c1f100566";
-        string clientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
-        string scope = "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds";
-        string redirectUri = "https://6cfb-91-183-232-210.ngrok-free.app/oauth-callback";
-
-        var formData = new List<KeyValuePair<string, string>>
-        {
-            new KeyValuePair<string, string>("grant_type", "authorization_code"),
-            new KeyValuePair<string, string>("code", authorizationCode),
-            new KeyValuePair<string, string>("client_id", clientId),
-            new KeyValuePair<string, string>("client_secret", clientSecret),
-            new KeyValuePair<string, string>("redirect_uri", redirectUri),
-            new KeyValuePair<string, string>("scope", scope)
-        };
-
-        using (var client = new HttpClient())
-        {
-            var tokenRequest = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
-            tokenRequest.Content = new FormUrlEncodedContent(formData);
-            var tokenResponse = await client.SendAsync(tokenRequest);
-
-            if (tokenResponse.IsSuccessStatusCode)
-            {
-                var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
-                // Parse the JSON response to extract the access token
-                // Store the access token securely for making API requests
-                return tokenJson;
+                response = "Access Token: " + userToken;
+                Debug.Print("ouiii" + userToken);
             }
             else
             {
-                return null;
+                response = "Token exchange failed.";
             }
         }
+        else
+        {
+            Debug.Print("OAuth callback failed.");
+            response = "Authorization failed or state mismatch.";
+        }
+
+        var GetTag = new GetAllVIN(userToken);
+        vehicleTag = await GetTag.GetVIN();
+        Debug.Print("vehicleVIN : " + vehicleTag);
+        UserToken.RedirectUserToIndex(NavigationManager, jsRuntime);
     }
+//     async Task RegisterVehicle()
+//     {
+//         try
+//         {
+//             accessToken = partnerToken;
+//             Debug.Print("Access Token = " + accessToken);
+
+//             if (string.IsNullOrWhiteSpace(accessToken))
+//             {
+//                 Debug.Print("Access token is missing. Please obtain the access token first.");
+//                 return;
+//             }
+
+//             string registerEndpoint = "https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/partner_accounts";
+
+//             // Create a payload for the registration request
+//             var payload = new
+//             {
+//                 domain = "7d8b-2a02-2788-11c4-afd-d045-b4de-1049-d1ad.ngrok-free.app"
+//             };
+
+//             // Serialize the payload to JSON
+//             var payloadJson = JsonSerializer.Serialize(payload);
+
+//             // Create an HttpClient instance
+//             using (var httpClient = new HttpClient())
+//             {
+//                 // Add the Bearer token to the request headers
+//                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+//                 // Send the registration request
+//                 var response = await httpClient.PostAsync(registerEndpoint, new StringContent(payloadJson, Encoding.UTF8, "application/json"));
+
+//                 if (response.IsSuccessStatusCode)
+//                 {
+//                     // Registration successful
+//                     Debug.Print("Vehicle registration successful.");
+//                 }
+//                 else if (response.StatusCode == HttpStatusCode.BadRequest)
+//                 {
+//                     // Registration failed with a 400 Bad Request status code
+//                     Debug.Print("Response Content: " + await response.Content.ReadAsStringAsync());
+
+//                     // Read the error response content
+//                     var errorResponseContent = await response.Content.ReadAsStringAsync();
+
+//                     try
+//                     {
+//                         // Deserialize the error response to an object (if it's in JSON format)
+//                         var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(errorResponseContent);
+
+//                         // Access and print the error details
+//                         Debug.Print("Error Code: " + errorResponse.error_code);
+//                         Debug.Print("Error Description: " + errorResponse.error_description);
+//                     }
+//                     catch (JsonException)
+//                     {
+//                         // If the error response is not in JSON format, just print the raw content
+//                         Debug.Print("Error Response Content: " + errorResponseContent);
+//                     }
+//                 }
+//                 else
+//                 {
+//                     // Handle other status codes or errors as needed
+//                     Debug.Print("Vehicle registration failed. Status code: " + (int)response.StatusCode);
+//                 }
+//             }
+//         }
+//         catch (Exception ex)
+//         {
+//             Debug.Print("Exception during vehicle registration: " + ex.Message);
+//         }
+//     }
+
+//     async Task GetTags()
+//     {
+//         string accessTokenJSON = token;
+//         accessToken = GetAccessTokenValue(accessTokenJSON);
+//         Debug.Print("access Token = " + accessToken);
+//         var GetTag = new GetTag(accessToken);
+//         vehicleTag = await GetTag.GetVehicleId();
+//         Debug.Print("debugici" + vehicleTag);
+//         if (vehicleTag != null)
+//         {
+//             Debug.Print($"Vehicle Tag: {vehicleTag}");
+//             ShowVehicleTags = "Vehicle Tag: " + vehicleTag;
+//         }
+//     }
+
+//     private string GetAccessTokenValue(string accessTokenJson)
+//     {
+//         try
+//         {
+//             var jsonDocument = JsonDocument.Parse(accessTokenJson);
+//             var root = jsonDocument.RootElement;
+
+//             // Access the access_token property
+//             if (root.TryGetProperty("access_token", out var accessTokenProperty))
+//             {
+//                 string accessToken = accessTokenProperty.GetString();
+//                 return accessToken;
+//             }
+//         }
+//         catch (Exception ex)
+//         {
+//             Debug.Print($"Exception: {ex.Message}");
+//         }
+
+//         return null;
+//     }
+
 }

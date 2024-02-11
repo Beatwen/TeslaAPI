@@ -6,79 +6,76 @@
     using System.Text.Json;
     using System.Threading.Tasks;
     using System.Diagnostics;
+    using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+    using TeslaAPI.Data;
+    using Microsoft.JSInterop;
+
     public class PartnerToken
     {
-        public static async Task<string> GetPartnerToken()
+        string token { get; set; }
+        public static async Task<string> GetPartnerToken(IJSRuntime jsRuntime)
+        {
+            Debug.Print("GetPartnerToken");
+            LocalStorageService _storageService = new LocalStorageService(jsRuntime);
+            string token = await _storageService.GetItemAsync<string>("PartnerToken");
+            bool valid = await IsTokenStillValid(_storageService);
+            if (token != null && valid)
+            {
+                Debug.Print("Found token in local storage: " + token);
+                Debug.Print("Token is still valid.");
+                return token;
+            }
+            else
+            {
+                Debug.Print("Token not found in local storage. Generating a new one...");
+                return await GeneratePartnerToken(_storageService);
+            }
+
+        }
+        static async Task<bool> IsTokenStillValid(LocalStorageService _localStorageService)
+        {
+            var expiresAt = await _localStorageService.GetItemAsync<DateTime>("PartnerTokenExpiresAt");
+            return expiresAt > DateTime.Now;
+        }
+        static async Task<string> GeneratePartnerToken(LocalStorageService _localStorageService)
         {
             Debug.Print("Generating partner access token...");
             string clientId = "285b750b0c21-49a2-a9af-c44c1f100566";
             string clientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
-
-            try
+            using (var httpClient = new HttpClient())
             {
-                using (var httpClient = new HttpClient())
+                var tokenRequest = new
                 {
-                    // Set the token request parameters
-                    var tokenRequest = new
-                    {
-                        grant_type = "client_credentials",
-                        client_id = clientId,
-                        client_secret = clientSecret,
-                        scope = ""
-                    };
+                    grant_type = "client_credentials",
+                    client_id = clientId,
+                    client_secret = clientSecret,
+                    scope = ""
+                };
+                var tokenRequestJson = JsonSerializer.Serialize(tokenRequest);
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://auth.tesla.com/oauth2/v3/token")
+                {
+                    Content = new StringContent(tokenRequestJson, Encoding.UTF8, "application/json")
+                };
 
-                    // Serialize the token request parameters to JSON
-                    var tokenRequestJson = JsonSerializer.Serialize(tokenRequest);
+                var response = await httpClient.SendAsync(request);
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
+                    string partnerAccessToken = tokenResponse.access_token;
+                    Debug.Print("Partner Access Token: " + partnerAccessToken + " valid until: " + DateTime.Now.AddSeconds(tokenResponse.expires_in));
 
-                    // Create an HttpRequestMessage for the token request
-                    var request = new HttpRequestMessage(HttpMethod.Post, "https://auth.tesla.com/oauth2/v3/token")
-                    {
-                        Content = new StringContent(tokenRequestJson, Encoding.UTF8, "application/json")
-                    };
-
-                    // Send the token request
-                    var response = await httpClient.SendAsync(request);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        // Parse the response to obtain the partner access token
-                        var responseContent = await response.Content.ReadAsStringAsync();
-                        var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
-                        string partnerAccessToken = tokenResponse.access_token;
-                        Debug.Print("Partner Access Token: " + partnerAccessToken);
-                        return partnerAccessToken;
-                        
-                    }
-                    else
-                    {
-                        Debug.Print("Failed to obtain partner access token. Status code: " + response.StatusCode);
-
-                        // Read the error response content
-                        var errorResponseContent = await response.Content.ReadAsStringAsync();
-
-                        try
-                        {
-                            // Deserialize the error response to an object (if it's in JSON format)
-                            var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(errorResponseContent);
-
-                            // Access and print the error details
-                            Debug.Print("Error Code: " + errorResponse.error_code);
-                            Debug.Print("Error Description: " + errorResponse.error_description);
-                        }
-                        catch (JsonException)
-                        {
-                            // If the error response is not in JSON format, just print the raw content
-                            Debug.Print("Error Response Content: " + errorResponseContent);
-                        }
-                        return null;
-                    }
+                    // Store the new token and its expiration time in local storage
+                    await _localStorageService.SetItemAsync("PartnerToken", partnerAccessToken);
+                    await _localStorageService.SetItemAsync("PartnerTokenExpiresAt", DateTime.Now.AddSeconds(tokenResponse.expires_in));
+                    return partnerAccessToken;
+                }
+                else
+                {
+                    Debug.Print("Failed to obtain partner access token. Status code: " + response.StatusCode);
+                    return null;
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Exception during token generation: " + ex.Message);
-            }
-            return null;
         }
     }
 

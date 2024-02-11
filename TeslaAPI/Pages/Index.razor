@@ -1,4 +1,17 @@
 ﻿@page "/"
+@using System.Net.Http;
+@using System.Text.Json;
+@using System.Net.Http.Headers;
+@using System.Threading.Tasks;
+@using System.Net;
+@using TeslaAPI.Component;
+@using System.Diagnostics;
+@using System.Text;
+@using IdentityModel;
+@using Microsoft.Extensions.DependencyInjection;
+@using Microsoft.JSInterop;
+@inject IJSRuntime jsRuntime;
+@inject NavigationManager NavigationManager;
 
 <PageTitle>Index</PageTitle>
 
@@ -6,4 +19,15 @@
 
 Welcome to your new app.
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code 
+{
+    string partnerToken;
+    string userToken;
+    protected override async Task OnInitializedAsync()
+    {
+        Debug.Print("Initialisation");
+        partnerToken = await PartnerToken.GetPartnerToken(jsRuntime);
+        Debug.Print("Init, le Partner Token = " + partnerToken);
+        userToken = await UserToken.GetUserToken(NavigationManager, jsRuntime);
+    }
+}

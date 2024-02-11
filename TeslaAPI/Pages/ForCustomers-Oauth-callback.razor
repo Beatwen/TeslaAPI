@@ -11,7 +11,7 @@
 <h3>Tesla Control Test</h3>
 <button @onclick="GetTeslaCode">Get Tesla Code</button>
 <p>@response</p>
-<button @onclick="GetTags">Get Tesla Tag</button>
+<button>Get Tesla Tag</button>
 <p>@Tags</p>
 
 @code {
@@ -82,18 +82,18 @@
             response = "Authorization failed or state mismatch.";
         }
     }
-    async Task GetTags()
-    {
-        string accessTokenJSON = token;
-        accessToken = GetAccessTokenValue(accessTokenJSON);
-        Debug.Print("access Token = " + accessToken);
-        var GetTag = new GetTag(accessToken);
-        string vehicleTag = await GetTag.GetVehicleId();
-        if (vehicleTag != null)
-        {
-            Debug.Print($"Vehicle Tag: {vehicleTag}");
-        }
-    }
+    // async Task GetTags()
+    // {
+    //     string accessTokenJSON = token;
+    //     accessToken = GetAccessTokenValue(accessTokenJSON);
+    //     Debug.Print("access Token = " + accessToken);
+    //     var GetTag = new GetAllVIN(accessToken);
+    //     string vehicleTag = await GetTag.GetVIN();
+    //     if (vehicleTag != null)
+    //     {
+    //         Debug.Print($"Vehicle Tag: {vehicleTag}");
+    //     }
+    // }
     private string GetAccessTokenValue(string accessTokenJson)
     {
         try
