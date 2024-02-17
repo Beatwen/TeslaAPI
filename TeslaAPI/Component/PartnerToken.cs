@@ -65,7 +65,7 @@
                     string partnerAccessToken = tokenResponse.access_token;
                     Debug.Print("Partner Access Token: " + partnerAccessToken + " valid until: " + DateTime.Now.AddSeconds(tokenResponse.expires_in));
 
-                    // Store the new token and its expiration time in local storage
+
                     await _localStorageService.SetItemAsync("PartnerToken", partnerAccessToken);
                     await _localStorageService.SetItemAsync("PartnerTokenExpiresAt", DateTime.Now.AddSeconds(tokenResponse.expires_in));
                     return partnerAccessToken;

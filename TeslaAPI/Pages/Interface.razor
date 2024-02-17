@@ -1,0 +1,47 @@
+﻿@page "/interface"
+@using System;
+@using System.Net.Http;
+@using System.Threading.Tasks;
+@using System.Diagnostics;
+
+
+<h3>Choose the commands you want to see in the home page</h3>
+<MudGrid>
+    <MudItem xs="12" sm="6">
+        <MudButton @onclick="@(() => AddFavorite("honk"))" Class="d-flex align-center justify-center mud-width-full py-8">Honk honk</MudButton>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudButton Class="d-flex align-center justify-center mud-width-full py-8">Open Back Trunk</MudButton>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudButton Class="d-flex align-center justify-center mud-width-full py-8">Open Front Trunk</MudButton>
+    </MudItem>
+    <MudItem xs="6" sm="3">
+        <MudButton Class="d-flex align-center justify-center mud-width-full py-8">Ventilation On</MudButton>
+    </MudItem>
+    <MudItem xs="6" sm="3">
+        <MudButton Class="d-flex align-center justify-center mud-width-full py-8">Ventilation Off</MudButton>
+    </MudItem>
+    <MudItem xs="6" sm="3">
+        <MudButton Class="d-flex align-center justify-center mud-width-full py-8">Charge Max Range</MudButton>
+    </MudItem>
+    <MudItem xs="6" sm="3">
+        <MudButton Class="d-flex align-center justify-center mud-width-full py-8">Open Charge Door</MudButton>
+    </MudItem>
+    <MudItem xs="6" sm="3">
+        <MudButton Class="d-flex align-center justify-center mud-width-full py-8">Close Charge Door</MudButton>
+    </MudItem>
+</MudGrid>
+
+@code {
+
+    private async Task AddFavorite(string command)
+        {
+            Debug.Print("Command: " + command);
+        }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+}
