@@ -22,11 +22,11 @@ public class GetAllVIN
         try
         {
             // Make an API request to get the list of vehicles
+
             var response = await _httpClient.GetAsync("https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles");
             Debug.Print("Response Content: " + await response.Content.ReadAsStringAsync());
             Debug.Print($"Response: {response.Content}");
             Debug.Print($"httpClient: {_httpClient.DefaultRequestHeaders}");
-            // ...
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
@@ -48,13 +48,11 @@ public class GetAllVIN
                                 var firstVehicle = responseArray[0];
 
                                 // Check if "vehicle_id" exists in the first element
-                                if (firstVehicle.TryGetProperty("vehicle_id", out var vehicleId))
+                                if (firstVehicle.TryGetProperty("vin", out var vehicleVin))
                                 {
-                                    if (vehicleId.ValueKind == JsonValueKind.Number)
+                                    if (vehicleVin.ValueKind == JsonValueKind.String)
                                     {
-                                        long vehicleIdValue = vehicleId.GetInt64();
-                                        Debug.Print($"Vehicle ID (vehicle_id): {vehicleIdValue}");
-                                        return vehicleIdValue.ToString();
+                                        return vehicleVin.ToString();
                                     }
                                 }
                             }
@@ -62,8 +60,6 @@ public class GetAllVIN
                     }
                 }
             }
-
-            // If the code reaches here, there was no valid vehicle ID found in the response
             Debug.Print("No valid vehicle ID found in the response.");
 
         }
