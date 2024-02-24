@@ -26,19 +26,14 @@ namespace TeslaAPI.Data
             {
                 var serializedValue = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", key);
 
-                // Check if the serialized value is null
                 if (serializedValue == null)
                 {
-                    // Item does not exist in local storage, return null
                     return default;
                 }
-
-                // Deserialize the value
                 return JsonSerializer.Deserialize<T>(serializedValue);
             }
             catch (Exception ex)
             {
-                // Handle any exceptions (e.g., log the error)
                 Debug.Print($"Error retrieving item '{key}' from local storage: {ex.Message}");
                 return default;
             }

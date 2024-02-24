@@ -7,52 +7,39 @@
 @using Data;
 @inject IJSRuntime jsRuntime;
 @inject NavigationManager NavigationManager;
-@inject FavoriteTasks favoriteTasks;
+@inject FavoriteCommands favoriteTasks;
 
 <h3>Choose the commands you want to see in the home page</h3>
 <MudGrid>
-    <MudItem xs="12" sm="3">
-        <MudButton @onclick="@(() => AddFavorite("honk"))" Class="d-flex align-center justify-center mud-width-full py-8">Honk honk</MudButton>
-    </MudItem>
-    <MudItem xs="12" sm="3">
-        <MudButton @onclick="@(() => AddFavorite("openBackTrunk"))" Class="d-flex align-center justify-center mud-width-full py-8">Open Back Trunk</MudButton>
-    </MudItem>
-    <MudItem xs="12" sm="3">
-        <MudButton @onclick="@(() => AddFavorite("openFrontTrunk"))" Class="d-flex align-center justify-center mud-width-full py-8">Open Front Trunk</MudButton>
-    </MudItem>
-    <MudItem xs="6" sm="3">
-        <MudButton @onclick="@(() => AddFavorite("honk"))" Class="d-flex align-center justify-center mud-width-full py-8">Ventilation On</MudButton>
-    </MudItem>
-    <MudItem xs="6" sm="3">
-        <MudButton @onclick="@(() => AddFavorite("honk"))" Class="d-flex align-center justify-center mud-width-full py-8">Ventilation Off</MudButton>
-    </MudItem>
-    <MudItem xs="6" sm="3">
-        <MudButton @onclick="@(() => AddFavorite("honk"))" Class="d-flex align-center justify-center mud-width-full py-8">Charge Max Range</MudButton>
-    </MudItem>
-    <MudItem xs="6" sm="3">
-        <MudButton @onclick="@(() => AddFavorite("honk"))" Class="d-flex align-center justify-center mud-width-full py-8">Open Charge Door</MudButton>
-    </MudItem>
-    <MudItem xs="6" sm="3">
-        <MudButton @onclick="@(() => AddFavorite("honk"))" Class="d-flex align-center justify-center mud-width-full py-8">Close Charge Door</MudButton>
-    </MudItem>
+    @foreach (var item in favoriteTasks.BaseTasks)
+    {
+        <MudItem xs="6" sm="3">
+            <MudButton @onclick="@(() => AddFavorite(@item))" Class="@("d-flex align-center justify-center mud-width-full py-8 " + @selected)">@item</MudButton>
+        </MudItem>
+        <MudItem xs="6" sm="3">
+            <MudButton @onclick="@(() => AddFavorite("Close Charge Door"))" Class="d-flex align-center justify-center mud-width-full py-8">Close Charge Door</MudButton>
+        </MudItem>
+    }
 </MudGrid>
 
 @code {
-    private async Task AddFavorite(string command)
+    private List<string> TaskList = new();
+    private string selected = "";
+    private async Task AddFavorite(Command command)
     {
-        if (favoriteTasks.Tasks.Contains(command))
+        if (favoriteTasks.Commands.Contains(command))
         {
-            favoriteTasks.Tasks.Remove(command);
+            favoriteTasks.Commands.Remove(command);
         }
         else
         {
-            favoriteTasks.Tasks.Add(command);
+            favoriteTasks.Commands.Add(command);
         }
 
         LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
         await localStorageService.SetItemAsync("FavCommands", favoriteTasks);
         Debug.Print("Command added: " + command);
-        foreach(var item in favoriteTasks.Tasks)
+        foreach(var item in favoriteTasks.Commands)
         {
             Debug.Print("Commande favorite: " + item);
         };

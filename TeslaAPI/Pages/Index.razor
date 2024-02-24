@@ -11,12 +11,13 @@
 @using IdentityModel;
 @using Microsoft.Extensions.DependencyInjection;
 @using Microsoft.JSInterop;
+@inject FavoriteCommands favoriteTask;
 @inject IJSRuntime jsRuntime;
 @inject NavigationManager NavigationManager;
 
 <PageTitle>Index</PageTitle>
 
-@foreach (var item in displayFavoriteTask)
+@foreach (var item in favoriteTask.Commands)
 {
     <MudItem xs="6" sm="3">
         <MudButton Class="d-flex align-center justify-center mud-width-full py-8">@item</MudButton>
@@ -27,7 +28,6 @@
 {
     string partnerToken;
     string userToken;
-    List<string> displayFavoriteTask = new();
     protected override async Task OnInitializedAsync()
     {
         Debug.Print("Initialisation");
@@ -38,15 +38,14 @@
     }
     private async Task DisplayFavoriteTask()
     {
-
-        LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
-        FavoriteTasks favCommand = await localStorageService.GetItemAsync<FavoriteTasks>("FavCommands");
-        if (favCommand == null) 
-            return;
-
-        foreach (var item in favCommand.Tasks)
+        if (favoriteTask == null)
         {
-            displayFavoriteTask.Add(item);
+            LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
+            favoriteTask = await localStorageService.GetItemAsync<FavoriteCommands>("FavCommands");
+        }
+
+        foreach (var item in favoriteTask.Commands)
+        {
             Debug.Print("Commande favorite: " + item);
         }
     }
