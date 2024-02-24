@@ -9,7 +9,7 @@ namespace TeslaAPI.Component
 {
     public class UserToken
     {
-        static string baseUrl = "https://87be-91-183-232-210.ngrok-free.app";
+        static string baseUrl = "https://cod-precious-elephant.ngrok-free.app";
         static string redirectUrl = $"{baseUrl}/oauth-callback";
         static string clientId = "285b750b0c21-49a2-a9af-c44c1f100566";
         static string clientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
