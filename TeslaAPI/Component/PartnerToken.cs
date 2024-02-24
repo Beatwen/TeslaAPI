@@ -61,7 +61,7 @@
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
+                    TokenResponse tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
                     string partnerAccessToken = tokenResponse.access_token;
                     Debug.Print("Partner Access Token: " + partnerAccessToken + " valid until: " + DateTime.Now.AddSeconds(tokenResponse.expires_in));
 
