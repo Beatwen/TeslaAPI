@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using MudBlazor.Services;
 using TeslaAPI.Component;
+using TeslaAPI.Component.Commands;
 
 
 
@@ -17,6 +18,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 builder.Services.AddSingleton<FavoriteCommands>();
+builder.Services.AddSingleton<VehicleDataResponse>();
 
 var app = builder.Build();
 

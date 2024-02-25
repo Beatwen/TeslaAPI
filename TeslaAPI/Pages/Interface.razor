@@ -13,27 +13,31 @@
 <MudGrid>
     @foreach (var item in favoriteTasks.BaseTasks)
     {
+        var isSelected = favoriteTasks.Commands.Any(c => c.Name == item && c.Selected);
+        var Selected = isSelected ? "green darken-1" : "";
         <MudItem xs="6" sm="3">
-            <MudButton @onclick="@(() => AddFavorite(@item))" Class="@("d-flex align-center justify-center mud-width-full py-8 " + @selected)">@item</MudButton>
-        </MudItem>
-        <MudItem xs="6" sm="3">
-            <MudButton @onclick="@(() => AddFavorite("Close Charge Door"))" Class="d-flex align-center justify-center mud-width-full py-8">Close Charge Door</MudButton>
+            <MudButton @onclick="@(() => AddFavorite(@item))" Class="@($"d-flex align-center justify-center mud-width-full py-8 " + @Selected)">@item</MudButton>
         </MudItem>
     }
 </MudGrid>
 
 @code {
+    private MudTheme Theme = new MudTheme();
     private List<string> TaskList = new();
     private string selected = "";
-    private async Task AddFavorite(Command command)
+    private async Task AddFavorite(string command)
     {
-        if (favoriteTasks.Commands.Contains(command))
+        Command c = new() {Name = command};
+        if (favoriteTasks.Commands.Any(c => c.Name == command))
         {
-            favoriteTasks.Commands.Remove(command);
+            favoriteTasks.Commands.RemoveAll(c => c.Name == command);
+            c.Selected = false;
+
         }
         else
         {
-            favoriteTasks.Commands.Add(command);
+            favoriteTasks.Commands.Add(c);
+            c.Selected = true;
         }
 
         LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
@@ -41,7 +45,8 @@
         Debug.Print("Command added: " + command);
         foreach(var item in favoriteTasks.Commands)
         {
-            Debug.Print("Commande favorite: " + item);
+            Debug.Print("Commande favorite: " + item.Name);
+            Debug.Print("Commande favorite Select ?: " + item.Selected);
         };
     }
 

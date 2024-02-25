@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices.JavaScript;
 using System.Text.Json;
@@ -14,33 +15,30 @@ namespace TeslaAPI.Component.Commands
                 var _httpClient = new HttpClient();
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", userToken);
                 _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                var wakeUpResponse = await _httpClient.PostAsync($"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/5YJSA7E18HF180633/wake_up", new StringContent("{}", System.Text.Encoding.UTF8, "application/json"));
+                var wakeUpResponse = await _httpClient.PostAsync($"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{vehicleVIN}/wake_up", new StringContent("{}", System.Text.Encoding.UTF8, "application/json"));
                 if (!wakeUpResponse.IsSuccessStatusCode)
                 {
                     Debug.Print($"Error waking up vehicle: {wakeUpResponse.StatusCode}");
                 }
-                // Wait for vehicle to wake up
                 bool isVehicleAwake = false;
                 int attempts = 0;
-                const int maxAttempts = 6;
-                //Attempts to check if vehicle is awake
+                const int maxAttempts = 30;
                 while (!isVehicleAwake && attempts < maxAttempts)
                 {
                     attempts++;
-                    await Task.Delay(5000); // Wait for 5 seconds before checking status
+                    await Task.Delay(1000);
 
-                    var vehicleStateResponse = await _httpClient.GetAsync($"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/5YJSA7E18HF180633/vehicle_data");
+                    var vehicleStateResponse = await _httpClient.GetAsync($"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{vehicleVIN}/vehicle_data");
                     if (vehicleStateResponse.IsSuccessStatusCode)
                     {
                         var vehicleStateContent = await vehicleStateResponse.Content.ReadAsStringAsync();
-                        var vehicleResponse = JsonSerializer.Deserialize<VehicleDataResponse>(vehicleStateContent);
+                        var vehicleData = JsonSerializer.Deserialize<VehicleDataResponse>(vehicleStateContent);
                         Debug.Print($"Vehicle Content: {vehicleStateContent}");
-                        //int? batteryLevel = vehicleResponse.Response.;
-                        long? userId = vehicleResponse?.response?.user_id;
+                        long? userId = vehicleData?.response?.user_id;
                         Debug.Print($"User ID: {userId}");
-                        int? batteryLevel = vehicleResponse.response.charge_state.battery_level;
+                        int? batteryLevel = vehicleData.response.charge_state.battery_level;
                         isVehicleAwake = true;
-                        return vehicleResponse;
+                        return vehicleData;
                     }
                     else
                     {
@@ -69,14 +67,23 @@ namespace TeslaAPI.Component.Commands
     public class ResponseData
     {
         public long user_id { get; set; }
+        public int vehicle_id { get; set; }
+        public string vin { get; set; }
         public ChargeState charge_state { get; set; }
+        public VehicleState vehicle_state { get; set; }
     }
     public class ChargeState
     {
         public int battery_level {  get; set; }
         public string preconditioning_times { get; set; }
         public bool preconditioning_enable { get; set; }
-
-
+    }
+    public class VehicleState
+    {
+        public bool sentry_mode { get; set; }
+        public bool sentry_mode_available { get; set; }
+        public bool preconditioning_enable { get; set; }
+        public bool remote_start { get; set; }
+        public bool locked {  get; set; }
     }
 }

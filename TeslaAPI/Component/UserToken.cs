@@ -9,12 +9,12 @@ namespace TeslaAPI.Component
 {
     public class UserToken
     {
-        static string baseUrl = "https://cod-precious-elephant.ngrok-free.app";
-        static string redirectUrl = $"{baseUrl}/oauth-callback";
-        static string clientId = "285b750b0c21-49a2-a9af-c44c1f100566";
-        static string clientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
+        static string BaseUrl = "https://cod-precious-elephant.ngrok-free.app";
+        static string RedirectUrl = $"{BaseUrl}/oauth-callback";
+        static string ClientId = "285b750b0c21-49a2-a9af-c44c1f100566";
+        static string ClientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
         static string tokenEndpoint = "https://auth.tesla.com/oauth2/v3/token";
-        static string scope = "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds";
+        static string Scope = "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds";
 
         public static async Task<string> GetUserToken(NavigationManager navigationManager, IJSRuntime jsRuntime)
         {
@@ -28,10 +28,9 @@ namespace TeslaAPI.Component
             }
             else if (token != null && !await IsTokenStillValid(localStorageService))
             {
-                //Let's refresh the token !
-                Debug.Print("Old token, let's refresh it");
-                await RefreshToken(token, jsRuntime);
-                return null;
+                Debug.Print("Old token, let's refresh it" + token);
+                token = await RefreshToken(token, jsRuntime, navigationManager);
+                return token;
             }
             else
             {
@@ -51,7 +50,7 @@ namespace TeslaAPI.Component
             
             string codeVerifier = Code.GenerateRandomString(86);
             string state = Code.GenerateRandomString(32);
-            string authorizeUrl = $"https://auth.tesla.com/oauth2/v3/authorize?&client_id=285b750b0c21-49a2-a9af-c44c1f100566&locale=en-US&prompt=login&redirect_uri={redirectUrl}&response_type=code&scope=openid%20offline_access%20user_data%20vehicle_device_data%20vehicle_cmds%20vehicle_charging_cmds&state={state}";
+            string authorizeUrl = $"https://auth.tesla.com/oauth2/v3/authorize?&client_id=285b750b0c21-49a2-a9af-c44c1f100566&locale=en-US&prompt=login&redirect_uri={RedirectUrl}&response_type=code&scope=openid%20offline_access%20user_data%20vehicle_device_data%20vehicle_cmds%20vehicle_charging_cmds&state={state}";
             using (var client = new HttpClient())
             {
                 navigationManager.NavigateTo(authorizeUrl);
@@ -61,7 +60,7 @@ namespace TeslaAPI.Component
         {
             using (var client = new HttpClient())
             {
-                navigationManager.NavigateTo(baseUrl);
+                navigationManager.NavigateTo(BaseUrl);
             }
         }
         public static async Task<string> GenerateUserToken(string authorizationCode, IJSRuntime jsRuntime)
@@ -70,10 +69,10 @@ namespace TeslaAPI.Component
                 {
                     new KeyValuePair<string, string>("grant_type", "authorization_code"),
                     new KeyValuePair<string, string>("code", authorizationCode),
-                    new KeyValuePair<string, string>("client_id", clientId),
-                    new KeyValuePair<string, string>("client_secret", clientSecret),
-                    new KeyValuePair<string, string>("redirect_uri", redirectUrl),
-                    new KeyValuePair<string, string>("scope", scope)
+                    new KeyValuePair<string, string>("client_id", ClientId),
+                    new KeyValuePair<string, string>("client_secret", ClientSecret),
+                    new KeyValuePair<string, string>("redirect_uri", RedirectUrl),
+                    new KeyValuePair<string, string>("scope", Scope)
                 };
 
                 using (var client = new HttpClient())
@@ -95,26 +94,39 @@ namespace TeslaAPI.Component
                     }
                 }
         }
-        public static async Task<string> RefreshToken(string refreshToken, IJSRuntime jsRuntime)
+        public static async Task<string> RefreshToken(string oldToken, IJSRuntime jsRuntime, NavigationManager navigationManager)
         {
-/*            string tokenEndpoint = "https://auth.tesla.com/oauth2/v3/token";
-            string clientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
-            string scope = "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds";
-*/
             var formData = new List<KeyValuePair<string, string>>
-            {
-                new("grant_type", "refresh_token"),
-                new("refresh_token", refreshToken),
-                new("client_id", clientId),
-                new("client_secret", clientSecret),
-                new("scope", scope)
-            };
+                {
+                    new("grant_type", "refresh_token"),
+                    new("refresh_token", oldToken),
+                    new("client_id", ClientId),
+                    new("client_secret", ClientSecret),
+                    new("scope", Scope)
+                };
 
             using (var client = new HttpClient())
             {
                 var tokenRequest = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
                 tokenRequest.Content = new FormUrlEncodedContent(formData);
+
+ 
+                //Debug.WriteLine("Token Refresh Request:");
+                //Debug.WriteLine($"URL: {tokenRequest.RequestUri}");
+                //Debug.WriteLine($"Method: {tokenRequest.Method}");
+                //Debug.WriteLine("Headers:");
+                //foreach (var header in tokenRequest.Headers)
+                //{
+                //    Debug.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
+                //}
+                //Debug.WriteLine($"Body: {await tokenRequest.Content.ReadAsStringAsync()}");
+
                 var tokenResponse = await client.SendAsync(tokenRequest);
+
+                //Debug.WriteLine("Token Refresh Response:");
+                //Debug.WriteLine($"Status Code: {tokenResponse.StatusCode}");
+                //Debug.WriteLine($"Response Content: {await tokenResponse.Content.ReadAsStringAsync()}");
+
                 if (tokenResponse.IsSuccessStatusCode)
                 {
                     var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
@@ -125,6 +137,7 @@ namespace TeslaAPI.Component
                 }
                 else
                 {
+                    RedirectUser(navigationManager, jsRuntime);
                     return null;
                 }
             }

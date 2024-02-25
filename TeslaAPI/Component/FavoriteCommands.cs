@@ -21,8 +21,6 @@ namespace TeslaAPI.Component
                 "WakeUp",
                 "OpenTrunk",
                 "OpenFrunk",
-                "CloseTrunk",
-                "CloseFrunk",
                 "StartCharging",
                 "StopCharging",
                 "SetValetMode",
@@ -38,5 +36,6 @@ namespace TeslaAPI.Component
         public required string Name { get; set; }
         public bool Selected { get; set; }
         public int Value { get; set; }
+        public int BoolValue { get; set; }
     }
 }
