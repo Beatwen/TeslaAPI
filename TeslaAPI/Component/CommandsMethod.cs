@@ -39,7 +39,6 @@ namespace TeslaAPI.Component
         }
         public static async Task Unlock(string VIN, string token, VehicleDataResponse vehicleData)
         {
-            bool onOff = false;
             string URL = "";
             if (vehicleData.response.vehicle_state.locked)
             {
@@ -51,7 +50,7 @@ namespace TeslaAPI.Component
             }
             await NewhttpClient(VIN, URL, token, vehicleData);
         }
-        public static async Task<string> NewhttpClient(string VIN, string URL, string token, VehicleDataResponse vehicleData, string? data = null)
+        public static async Task<string?> NewhttpClient(string VIN, string URL, string token, VehicleDataResponse vehicleData, string? data = null)
         {
             if (vehicleData == null) 
                 return "";

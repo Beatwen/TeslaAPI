@@ -16,10 +16,11 @@ namespace TeslaAPI.Component
         static string tokenEndpoint = "https://auth.tesla.com/oauth2/v3/token";
         static string Scope = "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds";
 
-        public static async Task<string> GetUserToken(NavigationManager navigationManager, IJSRuntime jsRuntime)
+        public static async Task<string?> GetUserToken(NavigationManager navigationManager, IJSRuntime jsRuntime)
         {
             LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
-            string token = await localStorageService.GetItemAsync<string>("UserToken");
+            string? v = await localStorageService.GetItemAsync<string>("UserToken");
+            string? token = v;
             Debug.Print(token);
             if (token != null && await IsTokenStillValid(localStorageService)) 
             {
@@ -63,7 +64,7 @@ namespace TeslaAPI.Component
                 navigationManager.NavigateTo(BaseUrl);
             }
         }
-        public static async Task<string> GenerateUserToken(string authorizationCode, IJSRuntime jsRuntime)
+        public static async Task<string?> GenerateUserToken(string authorizationCode, IJSRuntime jsRuntime)
         {
                 var formData = new List<KeyValuePair<string, string>>
                 {
@@ -84,6 +85,7 @@ namespace TeslaAPI.Component
                     {
                         var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
                         var responseAsObject = JsonSerializer.Deserialize<TokenResponse>(tokenJson);
+                        if (responseAsObject == null) { return null;}
                         string UserToken = responseAsObject.access_token;
                         await StoreToken(responseAsObject, jsRuntime);
                         return UserToken;
@@ -94,7 +96,7 @@ namespace TeslaAPI.Component
                     }
                 }
         }
-        public static async Task<string> RefreshToken(string oldToken, IJSRuntime jsRuntime, NavigationManager navigationManager)
+        public static async Task<string?> RefreshToken(string oldToken, IJSRuntime jsRuntime, NavigationManager navigationManager)
         {
             var formData = new List<KeyValuePair<string, string>>
                 {
@@ -109,28 +111,12 @@ namespace TeslaAPI.Component
             {
                 var tokenRequest = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
                 tokenRequest.Content = new FormUrlEncodedContent(formData);
-
- 
-                //Debug.WriteLine("Token Refresh Request:");
-                //Debug.WriteLine($"URL: {tokenRequest.RequestUri}");
-                //Debug.WriteLine($"Method: {tokenRequest.Method}");
-                //Debug.WriteLine("Headers:");
-                //foreach (var header in tokenRequest.Headers)
-                //{
-                //    Debug.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-                //}
-                //Debug.WriteLine($"Body: {await tokenRequest.Content.ReadAsStringAsync()}");
-
                 var tokenResponse = await client.SendAsync(tokenRequest);
-
-                //Debug.WriteLine("Token Refresh Response:");
-                //Debug.WriteLine($"Status Code: {tokenResponse.StatusCode}");
-                //Debug.WriteLine($"Response Content: {await tokenResponse.Content.ReadAsStringAsync()}");
-
                 if (tokenResponse.IsSuccessStatusCode)
                 {
                     var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
                     var responseAsObject = JsonSerializer.Deserialize<TokenResponse>(tokenJson);
+                    if (responseAsObject == null) { return null; }
                     string userToken = responseAsObject.access_token;
                     await StoreToken(responseAsObject, jsRuntime);
                     return userToken;

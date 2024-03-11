@@ -49,16 +49,25 @@
         Debug.Print("Init, le Partner Token = " + partnerToken);
         userToken = await UserToken.GetUserToken(NavigationManager, jsRuntime);
         Debug.Print("Init, le User Token = " + userToken);
-
-        GetAllVIN getAllVIN = new(userToken);
-        VIN = await getAllVIN.GetVIN();
-        if (VIN != null)
-        {
-            vehicleData = await WakeUp.WakeItUp(VIN, userToken);
-            await Task.Delay(5000);
-            SetData(vehicleData);
-        }
         await DisplayFavoriteCommands();
+        if (userToken != null)
+        {
+            GetAllVIN getAllVIN = new(userToken);
+            VIN = await getAllVIN.GetVIN();
+            if (VIN != null)
+            {
+                vehicleData = await WakeUp.GetVehicleInfo(VIN, userToken);
+                if (vehicleData != null)
+                {
+                    await Task.Delay(2000);
+                    SetData(vehicleData);
+                }
+                else
+                {
+                    vehicleData = await WakeUp.WakeItUp(VIN, userToken);
+                }
+            }
+        }
     }
     private async Task DisplayFavoriteCommands()
     {
@@ -84,14 +93,11 @@
     {
         if (vehicleData.response != null)
         {
-            Debug.Print("called to change the values +" + vehicleData.response.vehicle_state.sentry_mode);
-            Debug.Print(" is vehicle locked ?" + vehicleData.response.vehicle_state.locked);
             battery = vehicleData.response.charge_state.battery_level;
             preconditioning_times = vehicleData.response.charge_state.preconditioning_times;
             precont_enable = vehicleData.response.charge_state.preconditioning_enable ? "Program is actived" : "Program is not activated";
             sentrymode = vehicleData.response.vehicle_state.sentry_mode;
         }
-
     }
     private async Task CommandTrigger(Command command)
     {
@@ -103,13 +109,24 @@
             {
 
                 //making sure the vehicle is awake !
-                vehicleData = await WakeUp.WakeItUp(VIN, userToken);
+                if (await WakeUp.GetVehicleInfo(VIN,userToken) == null)
+                {
+                    Debug.Print("Vehicle is not awake, let's wake it up !");
+                    var vehiculeData = await WakeUp.WakeItUp(VIN, userToken);
+                }
+                else 
+                {
+                    var vehiculeData = await WakeUp.GetVehicleInfo(VIN, userToken);
+                }
                 //call the method
                 await (Task)methodInfo.Invoke(null, new object[] { VIN, userToken, vehicleData });
                 //update the vehicleData
-                vehicleData = await WakeUp.WakeItUp(VIN, userToken);
-                SetData(vehicleData);
-                StateHasChanged();
+                vehicleData = await WakeUp.GetVehicleInfo(VIN, userToken);
+                if (vehicleData != null)
+                {
+                    SetData(vehicleData);
+                    StateHasChanged();
+                }
             }
         }
         else

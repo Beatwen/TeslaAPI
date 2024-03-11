@@ -20,7 +20,7 @@ namespace TeslaAPI.Data
             await _jsRuntime.InvokeVoidAsync("localStorage.setItem", key, serializedValue);
         }
 
-        public async Task<T> GetItemAsync<T>(string key)
+        public async Task<T?> GetItemAsync<T>(string key)
         {
             try
             {

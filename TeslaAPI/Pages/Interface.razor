@@ -42,17 +42,10 @@
 
         LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
         await localStorageService.SetItemAsync("FavCommands", favoriteTasks);
-        Debug.Print("Command added: " + command);
         foreach(var item in favoriteTasks.Commands)
         {
             Debug.Print("Commande favorite: " + item.Name);
             Debug.Print("Commande favorite Select ?: " + item.Selected);
         };
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-
-
     }
 }

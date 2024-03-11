@@ -17,7 +17,7 @@ public class GetAllVIN
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
-    public async Task<string> GetVIN()
+    public async Task<string?> GetVIN()
     {
         try
         {
@@ -75,7 +75,7 @@ public class GetAllVIN
 }
 public class VehicleResponse
 {
-    public List<VehicleInfo> Response { get; set; }
+    public required List<VehicleInfo> Response { get; set; }
 }
 
 public class VehicleInfo
