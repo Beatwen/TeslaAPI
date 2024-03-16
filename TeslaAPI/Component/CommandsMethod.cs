@@ -13,19 +13,19 @@ namespace TeslaAPI.Component
     static class CommandsMethod
     {
         static readonly string TokenEndPoint = "https://fleet-api.prd.na.vn.cloud.tesla.com/";
-        public static async Task Honk(string VIN, string token, VehicleDataResponse vehicleData)
+        public static async Task Honk(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {
             string URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/honk_horn";
             await NewhttpClient(VIN, URL, token, vehicleData);
         }
-        public static async Task Flash(string VIN, string token, VehicleDataResponse vehicleData)
+        public static async Task Flash(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {
 
             Debug.Print("vin =" + VIN);
             string URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/flash_lights";
             await NewhttpClient(VIN, URL, token, vehicleData);
         }
-        public static async Task SetSentryMode(string VIN, string token, VehicleDataResponse vehicleData)
+        public static async Task SetSentryMode(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {
             bool onOff = false;
             if (vehicleData.response.vehicle_state.sentry_mode_available && vehicleData.response.vehicle_state.sentry_mode == false)
@@ -37,18 +37,41 @@ namespace TeslaAPI.Component
             string data = JsonSerializer.Serialize(new { on = onOff });
             await NewhttpClient(VIN, URL, token, vehicleData, data);
         }
-        public static async Task Unlock(string VIN, string token, VehicleDataResponse vehicleData)
+        public static async Task Unlock(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {
-            string URL = "";
+            Debug.Print("Called Lock or unlock " + command.DisplayName + " command name : " + command.Name);
+            string URL;
             if (vehicleData.response.vehicle_state.locked)
             {
+                Debug.Print("Unlocking the car");
                 URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/door_unlock";
+                
             }
             else
             {
+                Debug.Print("Locking the car");
                 URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/door_lock";
+                
             }
-            await NewhttpClient(VIN, URL, token, vehicleData);
+            var response = await NewhttpClient(VIN, URL, token, vehicleData);
+            if (response != null) { _=command.DisplayName == "Unlock" ? command.DisplayName = "Lock" : command.DisplayName = "Unlock"; }
+        }
+        public static async Task OpenChargePort(string VIN, string token, VehicleDataResponse vehicleData, Command command)
+        {
+            Debug.Print("Called Lock or unlock " + command.DisplayName + " command name : " + command.Name);
+            string URL;
+            if (vehicleData.response.charge_state.charge_port_door_open)
+            {
+                Debug.Print("Unlocking the car trap");
+                URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/charge_port_door_open";
+            }
+            else
+            {
+                Debug.Print("Locking the car trap");
+                URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/charge_port_door_close";
+            }
+            var response = await NewhttpClient(VIN, URL, token, vehicleData);
+            if (response != null) { _=command.DisplayName == "OpenChargePort" ? command.DisplayName = "CloseChargePort" : command.DisplayName = "OpenChargePort"; }
         }
         public static async Task<string?> NewhttpClient(string VIN, string URL, string token, VehicleDataResponse vehicleData, string? data = null)
         {
@@ -66,7 +89,6 @@ namespace TeslaAPI.Component
                 }
                 else
                 {
-
                     Debug.Print("failed");
                     return null;
                 }
