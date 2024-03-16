@@ -1,6 +1,7 @@
 ﻿namespace TeslaAPI.Component
 {
     using System;
+    using System.IO;
     using System.Net.Http;
     using System.Text;
     using System.Text.Json;
@@ -9,35 +10,38 @@
     using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
     using TeslaAPI.Data;
     using Microsoft.JSInterop;
+    using Azure;
 
     public class PartnerToken
     {
-        string token { get; set; }
-        public static async Task<string> GetPartnerToken(IJSRuntime jsRuntime)
+        public static async Task<string?> GetPartnerToken(IJSRuntime jsRuntime)
         {
-            Debug.Print("GetPartnerToken");
-            LocalStorageService _storageService = new LocalStorageService(jsRuntime);
-            string token = await _storageService.GetItemAsync<string>("PartnerToken");
-            bool valid = await IsTokenStillValid(_storageService);
-            if (token != null && valid)
+            var filePath = "PartnerToken.json";
+            if (File.Exists(filePath))
             {
-                Debug.Print("Found token in local storage: " + token);
-                Debug.Print("Token is still valid.");
-                return token;
+                var jsonContent = File.ReadAllText(filePath);
+                var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(jsonContent);
+                bool valid = IsTokenStillValid(tokenResponse);
+                if (tokenResponse != null && valid)
+                {
+                    return tokenResponse.access_token;
+                }
+                else
+                {
+                    return await GeneratePartnerToken();
+                }
             }
             else
             {
-                Debug.Print("Token not found in local storage. Generating a new one...");
-                return await GeneratePartnerToken(_storageService);
+                return await GeneratePartnerToken();
             }
-
         }
-        static async Task<bool> IsTokenStillValid(LocalStorageService _localStorageService)
+        static bool IsTokenStillValid(TokenResponse? tokenResponse)
         {
-            var expiresAt = await _localStorageService.GetItemAsync<DateTime>("PartnerTokenExpiresAt");
+            var expiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in);
             return expiresAt > DateTime.Now;
         }
-        static async Task<string> GeneratePartnerToken(LocalStorageService _localStorageService)
+        static async Task<string?> GeneratePartnerToken()
         {
             Debug.Print("Generating partner access token...");
             string clientId = "285b750b0c21-49a2-a9af-c44c1f100566";
@@ -61,14 +65,15 @@
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    TokenResponse tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
-                    string partnerAccessToken = tokenResponse.access_token;
-                    Debug.Print("Partner Access Token: " + partnerAccessToken + " valid until: " + DateTime.Now.AddSeconds(tokenResponse.expires_in));
-
-
-                    await _localStorageService.SetItemAsync("PartnerToken", partnerAccessToken);
-                    await _localStorageService.SetItemAsync("PartnerTokenExpiresAt", DateTime.Now.AddSeconds(tokenResponse.expires_in));
-                    return partnerAccessToken;
+                    if (responseContent != null)
+                    {
+                        TokenResponse tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
+                        return tokenResponse.access_token;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
                 else
                 {
@@ -77,11 +82,18 @@
                 }
             }
         }
+        private static async Task StoreToken(TokenResponse tokenResponse, LocalStorageService localStorageService)
+        {
+            File.WriteAllText("PartnerToken.json", JsonSerializer.Serialize(tokenResponse));
+            await localStorageService.SetItemAsync("PartnerToken", tokenResponse.access_token);
+            await localStorageService.SetItemAsync("PartnerTokenExpiresAt", DateTime.Now.AddSeconds(tokenResponse.expires_in));
+        }
     }
 
     public class TokenResponse
     {
         public string access_token { get; set; }
+        public string refresh_token { get; set; }
         public string token_type { get; set; }
         public int expires_in { get; set; }
         public string scope { get; set; }

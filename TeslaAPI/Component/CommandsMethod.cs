@@ -5,14 +5,12 @@ using static System.Net.WebRequestMethods;
 using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
-using TeslaAPI.Component.Commands;
-
+using TeslaAPI.Component.Commands; 
 
 namespace TeslaAPI.Component
 {
     static class CommandsMethod
     {
-        static readonly string TokenEndPoint = "https://fleet-api.prd.na.vn.cloud.tesla.com/";
         public static async Task Honk(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {
             string URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/honk_horn";
@@ -35,7 +33,8 @@ namespace TeslaAPI.Component
             }
             string URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/set_sentry_mode";
             string data = JsonSerializer.Serialize(new { on = onOff });
-            await NewhttpClient(VIN, URL, token, vehicleData, data);
+            var response = await NewhttpClient(VIN, URL, token, vehicleData, data);
+            if (response != null) { _=command.DisplayName == "SetSentryMode" ? command.DisplayName = "SetSentryModeOff" : command.DisplayName = "SetSentryModeOn"; }
         }
         public static async Task Unlock(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {

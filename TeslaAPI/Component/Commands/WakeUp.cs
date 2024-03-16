@@ -23,7 +23,7 @@ namespace TeslaAPI.Component.Commands
                 }
                 bool isVehicleAwake = false;
                 int attempts = 0;
-                const int maxAttempts = 30;
+                const int maxAttempts = 19;
                 while (!isVehicleAwake && attempts < maxAttempts)
                 {
                     attempts++;
@@ -86,6 +86,11 @@ namespace TeslaAPI.Component.Commands
         public int battery_level {  get; set; }
         public required string preconditioning_times { get; set; }
         public bool preconditioning_enable { get; set; }
+        public bool charge_port_door_open { get; set; }
+        public required string charging_state { get; set; }
+        public bool managed_charging_active { get; set; }
+        public string? managed_charging_start_time { get; }
+        public int time_to_full_charge { get; }
     }
     public class VehicleState
     {

@@ -1,51 +1,29 @@
-using Xunit;
+using Bunit;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using Xunit;
+using TeslaAPI.Component;
 using Microsoft.JSInterop;
-using TeslaAPI;
-using System;
-using System.Threading.Tasks;
+using TeslaAPI.Pages;
 
-namespace TeslaAPITestUnit;
-
-public class UnitTest1
+public class TestInterface
 {
     [Fact]
-    public async Task StoreToken_SetsTokenInLocalStorage()
+    public void AddFavorite_ButtonClick_AddsFavoriteCommand()
     {
         // Arrange
-        var mockJsRuntime = new Mock<IJSRuntime>();
-        var tokenResponse = new TokenResponse
-        {
-            access_token = "testAccessToken",
-            expires_in = 3600 // 1 hour for example
-        };
+        using var ctx = new TestContext();
+        var jsRuntimeMock = new Mock<IJSRuntime>();
+        var favoriteCommandsMock = new Mock<FavoriteCommands>();
+        favoriteCommandsMock.Setup(m => m.BaseTasks).Returns(new List<string> { "Command1", "Command2" });
+        favoriteCommandsMock.Setup(m => m.Commands).Returns(new List<Command>());
 
-        // Setup mock to capture calls to IJSRuntime
-        // Note: Depending on the implementation details of LocalStorageService and how it interacts with IJSRuntime,
-        // you might need to adjust the setup to match actual method calls.
-        mockJsRuntime.Setup(js =>
-            js.InvokeAsync<object>(
-                "localStorage.setItem",
-                It.IsAny<object[]>())
-            ).Returns(Task.FromResult((object)null));
+        ctx.Services.AddSingleton<IJSRuntime>(jsRuntimeMock.Object);
+        ctx.Services.AddSingleton<FavoriteCommands>(favoriteCommandsMock.Object);
 
-        // Act
-        var result = await TeslaAPI.Commands.StoreToken(tokenResponse, mockJsRuntime.Object);
-
-        // Assert
-        // Verify that localStorage.setItem was called with the correct parameters
-        mockJsRuntime.Verify(js =>
-            js.InvokeAsync<object>(
-                "localStorage.setItem",
-                It.Is<object[]>(args => args[0].ToString() == "UserToken" && args[1].ToString() == tokenResponse.access_token)),
-            Times.Once());
-
-        mockJsRuntime.Verify(js =>
-            js.InvokeAsync<object>(
-                "localStorage.setItem",
-                It.Is<object[]>(args => args[0].ToString() == "UserTokenExpiresAt")),
-            Times.Once());
-
-        Assert.Equal(string.Empty, result);
+     
+        var component = ctx.RenderComponent<Interface>();
+        component.Find("button.specific-class").Click();
+        favoriteCommandsMock.Verify(m => m.Commands.Add(It.IsAny<Command>()), Times.Once);
     }
 }

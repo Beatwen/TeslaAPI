@@ -9,28 +9,24 @@ namespace TeslaAPI.Component
 {
     public class UserToken
     {
-        static string BaseUrl = "https://cod-precious-elephant.ngrok-free.app";
-        static string RedirectUrl = $"{BaseUrl}/oauth-callback";
-        static string ClientId = "285b750b0c21-49a2-a9af-c44c1f100566";
-        static string ClientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
-        static string tokenEndpoint = "https://auth.tesla.com/oauth2/v3/token";
-        static string Scope = "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds";
-
+        static readonly string BaseUrl = "https://cod-precious-elephant.ngrok-free.app";
+        static readonly string RedirectUrl = $"{BaseUrl}/oauth-callback";
+        static readonly string ClientId = "285b750b0c21-49a2-a9af-c44c1f100566";
+        static readonly string ClientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
+        static readonly string tokenEndpoint = "https://auth.tesla.com/oauth2/v3/token";
+        static readonly string Scope = "openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds";
         public static async Task<string?> GetUserToken(NavigationManager navigationManager, IJSRuntime jsRuntime)
         {
             LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
-            string? v = await localStorageService.GetItemAsync<string>("UserToken");
-            string? token = v;
-            Debug.Print(token);
+            string? token = await localStorageService.GetItemAsync<string>("UserToken");
             if (token != null && await IsTokenStillValid(localStorageService)) 
             {
-                Debug.Print("Found Token in Local Storage and is valid" + token);
                 return token;
             }
-            else if (token != null && !await IsTokenStillValid(localStorageService))
+            else if (token != null && await IsTokenStillValid(localStorageService) == false)
             {
-                Debug.Print("Old token, let's refresh it" + token);
-                token = await RefreshToken(token, jsRuntime, navigationManager);
+                string? refreshToken = await localStorageService.GetItemAsync<string>("RefreshToken");
+                token = await RefreshToken(refreshToken, jsRuntime, navigationManager);
                 return token;
             }
             else
@@ -39,10 +35,10 @@ namespace TeslaAPI.Component
                 RedirectUser(navigationManager, jsRuntime);
                 return null;
             }
-
         }
         static async Task<bool> IsTokenStillValid(LocalStorageService localStorageService)
         {
+   
             var expiresAt = await localStorageService.GetItemAsync<DateTime>("UserTokenExpiresAt");
             return expiresAt > DateTime.Now;
         }
@@ -68,12 +64,12 @@ namespace TeslaAPI.Component
         {
                 var formData = new List<KeyValuePair<string, string>>
                 {
-                    new KeyValuePair<string, string>("grant_type", "authorization_code"),
-                    new KeyValuePair<string, string>("code", authorizationCode),
-                    new KeyValuePair<string, string>("client_id", ClientId),
-                    new KeyValuePair<string, string>("client_secret", ClientSecret),
-                    new KeyValuePair<string, string>("redirect_uri", RedirectUrl),
-                    new KeyValuePair<string, string>("scope", Scope)
+                    new("grant_type", "authorization_code"),
+                    new("code", authorizationCode),
+                    new("client_id", ClientId),
+                    new("client_secret", ClientSecret),
+                    new("redirect_uri", RedirectUrl),
+                    new("scope", Scope)
                 };
 
                 using (var client = new HttpClient())
@@ -85,7 +81,9 @@ namespace TeslaAPI.Component
                     {
                         var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
                         var responseAsObject = JsonSerializer.Deserialize<TokenResponse>(tokenJson);
+                        Debug.Print(tokenJson.ToString());
                         if (responseAsObject == null) { return null;}
+                        Debug.Print(responseAsObject.refresh_token);
                         string UserToken = responseAsObject.access_token;
                         await StoreToken(responseAsObject, jsRuntime);
                         return UserToken;
@@ -96,12 +94,12 @@ namespace TeslaAPI.Component
                     }
                 }
         }
-        public static async Task<string?> RefreshToken(string oldToken, IJSRuntime jsRuntime, NavigationManager navigationManager)
+        public static async Task<string?> RefreshToken(string refreshToken, IJSRuntime jsRuntime, NavigationManager navigationManager)
         {
             var formData = new List<KeyValuePair<string, string>>
                 {
                     new("grant_type", "refresh_token"),
-                    new("refresh_token", oldToken),
+                    new("refresh_token", refreshToken),
                     new("client_id", ClientId),
                     new("client_secret", ClientSecret),
                     new("scope", Scope)
@@ -132,6 +130,7 @@ namespace TeslaAPI.Component
         {
             var localStorage = new LocalStorageService(jsRuntime);
             await localStorage.SetItemAsync("UserToken", response.access_token);
+            await localStorage.SetItemAsync("RefreshToken", response.refresh_token);
             await localStorage.SetItemAsync("UserTokenExpiresAt", DateTime.Now.AddSeconds(response.expires_in));
             return string.Empty;
         }

@@ -9,7 +9,6 @@ namespace TeslaAPI.Component
             {
                 "Honk",
                 "Flash",
-                "Lock",
                 "Unlock",
                 "OpenChargePort",
                 "CloseChargePort",
@@ -33,7 +32,13 @@ namespace TeslaAPI.Component
 
     public class Command
     {
+        private string? _displayName;
         public required string Name { get; set; }
+        public string DisplayName
+        {
+            get => _displayName ?? Name;
+            set => _displayName = value;
+        }
         public bool Selected { get; set; }
         public int Value { get; set; }
         public int BoolValue { get; set; }

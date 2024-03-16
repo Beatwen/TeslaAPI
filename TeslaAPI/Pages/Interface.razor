@@ -39,13 +39,7 @@
             favoriteTasks.Commands.Add(c);
             c.Selected = true;
         }
-
         LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
         await localStorageService.SetItemAsync("FavCommands", favoriteTasks);
-        foreach(var item in favoriteTasks.Commands)
-        {
-            Debug.Print("Commande favorite: " + item.Name);
-            Debug.Print("Commande favorite Select ?: " + item.Selected);
-        };
     }
 }

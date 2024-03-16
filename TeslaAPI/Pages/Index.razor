@@ -9,6 +9,7 @@
 @using TeslaAPI.Data;
 @using System.Diagnostics;
 @using System.Text;
+@using System.Timers;
 @using IdentityModel;
 @using Microsoft.Extensions.DependencyInjection;
 @using Microsoft.JSInterop;
@@ -16,18 +17,17 @@
 @inject VehicleDataResponse vehicleData;
 @inject IJSRuntime jsRuntime;
 @inject NavigationManager NavigationManager;
+@implements IDisposable
 
 <PageTitle>Index</PageTitle>
 <h1>Tesla API</h1>
 <p>Your battery level is at @battery %</p>
-<p>Sentry mode is @sentrymode</p>
 
 @foreach (var item in favoriteCommands.Commands)
 {
     <MudItem xs="6" sm="3">
         <MudButton @onclick="@(() => CommandTrigger(@item))" Class="d-flex align-center justify-center mud-width-full py-8">
-            <p>@item.Name</p>
-            <p>@item.Value</p>
+            <p>@item.DisplayName</p>
         </MudButton>
     </MudItem>
 }
@@ -42,30 +42,45 @@
     string? partnerToken;
     string? userToken;
     bool sentrymode;
+    bool unlock;
+    private Timer timer;
+
+
 
     protected override async Task OnInitializedAsync()
     {
         partnerToken = await PartnerToken.GetPartnerToken(jsRuntime);
-        Debug.Print("Init, le Partner Token = " + partnerToken);
         userToken = await UserToken.GetUserToken(NavigationManager, jsRuntime);
-        Debug.Print("Init, le User Token = " + userToken);
         await DisplayFavoriteCommands();
         if (userToken != null)
         {
-            GetAllVIN getAllVIN = new(userToken);
-            VIN = await getAllVIN.GetVIN();
-            if (VIN != null)
+            await GetVehicleInfo(userToken);
+            StartPeriodicVehicleCheck(userToken);
+        }
+    }
+    private void StartPeriodicVehicleCheck(string userToken)
+    {
+        timer = new Timer(20000);
+        timer.Elapsed += async (sender, e) => await InvokeAsync(async () => await GetVehicleInfo(userToken));
+        timer.AutoReset = true;
+        timer.Enabled = true;
+    }
+    private async Task GetVehicleInfo(string userToken)
+    {
+
+        GetAllVIN getAllVIN = new(userToken);
+        VIN = await getAllVIN.GetVIN();
+        if (VIN != null)
+        {
+            vehicleData = await WakeUp.GetVehicleInfo(VIN, userToken);
+            if (vehicleData != null)
             {
-                vehicleData = await WakeUp.GetVehicleInfo(VIN, userToken);
-                if (vehicleData != null)
-                {
-                    await Task.Delay(2000);
-                    SetData(vehicleData);
-                }
-                else
-                {
-                    vehicleData = await WakeUp.WakeItUp(VIN, userToken);
-                }
+                await Task.Delay(2000);
+                SetData(vehicleData);
+            }
+            else
+            {
+                vehicleData = await WakeUp.WakeItUp(VIN, userToken);
             }
         }
     }
@@ -73,7 +88,6 @@
     {
         if (favoriteCommands.Commands.Count == 0)
         {
-            Debug.Print(" No Favorite, let's check in local storage");
             LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
             var storedFavoriteCommands = await localStorageService.GetItemAsync<FavoriteCommands>("FavCommands");
             if (storedFavoriteCommands != null)
@@ -82,6 +96,7 @@
                 {
                     favoriteCommands.Commands.Add(command);
                 }
+                UpdateCommandDisplayNames();
             }
         }
         foreach (var item in favoriteCommands.Commands)
@@ -93,10 +108,31 @@
     {
         if (vehicleData.response != null)
         {
-            battery = vehicleData.response.charge_state.battery_level;
-            preconditioning_times = vehicleData.response.charge_state.preconditioning_times;
-            precont_enable = vehicleData.response.charge_state.preconditioning_enable ? "Program is actived" : "Program is not activated";
-            sentrymode = vehicleData.response.vehicle_state.sentry_mode;
+            InvokeAsync(() =>
+            {
+                battery = vehicleData.response.charge_state.battery_level;
+                preconditioning_times = vehicleData.response.charge_state.preconditioning_times;
+                precont_enable = vehicleData.response.charge_state.preconditioning_enable ? "Program is actived" : "Program is not activated";
+                sentrymode = vehicleData.response.vehicle_state.sentry_mode;
+                unlock = vehicleData.response.vehicle_state.locked;
+                UpdateCommandDisplayNames();
+                StateHasChanged(); 
+            });
+        }
+    }
+    public void UpdateCommandDisplayNames()
+    {
+        foreach (var command in favoriteCommands.Commands)
+        {
+            if (command.Name.Equals("SetSentryMode"))
+            {
+                command.DisplayName = sentrymode ? "Set Sentry Off" : "Set Sentry On";
+                
+            }
+            else if (command.Name.Equals("Unlock"))
+            {
+                command.DisplayName = unlock ? "Unlock" : "Lock";
+            }   
         }
     }
     private async Task CommandTrigger(Command command)
@@ -107,19 +143,16 @@
             var methodInfo = typeof(CommandsMethod).GetMethod(commandName);
             if (methodInfo != null)
             {
-
+                var vehicleData = await WakeUp.GetVehicleInfo(VIN, userToken);
                 //making sure the vehicle is awake !
-                if (await WakeUp.GetVehicleInfo(VIN,userToken) == null)
+                if (vehicleData == null)
                 {
-                    Debug.Print("Vehicle is not awake, let's wake it up !");
-                    var vehiculeData = await WakeUp.WakeItUp(VIN, userToken);
+                    vehicleData = await WakeUp.WakeItUp(VIN, userToken);
                 }
-                else 
-                {
-                    var vehiculeData = await WakeUp.GetVehicleInfo(VIN, userToken);
-                }
+                //Updating the data into vehicleData
+                SetData(vehicleData);
                 //call the method
-                await (Task)methodInfo.Invoke(null, new object[] { VIN, userToken, vehicleData });
+                await (Task)methodInfo.Invoke(null, new object[] { VIN, userToken, vehicleData, command});
                 //update the vehicleData
                 vehicleData = await WakeUp.GetVehicleInfo(VIN, userToken);
                 if (vehicleData != null)
@@ -133,6 +166,15 @@
         {
 
             Debug.Print("No vehicule found to perform the action !");
+        }
+    }
+    public void Dispose()
+    {
+
+       if (timer != null)
+       {
+            timer.Stop();
+            timer.Dispose();
         }
     }
 }

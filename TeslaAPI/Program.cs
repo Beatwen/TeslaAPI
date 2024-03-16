@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.EntityFrameworkCore;
 using TeslaAPI.Data;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
@@ -19,6 +20,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 builder.Services.AddSingleton<FavoriteCommands>();
 builder.Services.AddSingleton<VehicleDataResponse>();
+
 
 var app = builder.Build();
 
