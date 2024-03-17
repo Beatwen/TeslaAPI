@@ -67,9 +67,11 @@
     }
     private async Task GetVehicleInfo(string userToken)
     {
-
-        GetAllVIN getAllVIN = new(userToken);
-        VIN = await getAllVIN.GetVIN();
+        if (VIN == null)
+        {
+            GetAllVIN getAllVIN = new(userToken);
+            VIN = await getAllVIN.GetVIN();
+        }
         if (VIN != null)
         {
             vehicleData = await WakeUp.GetVehicleInfo(VIN, userToken);
@@ -98,10 +100,6 @@
                 }
                 UpdateCommandDisplayNames();
             }
-        }
-        foreach (var item in favoriteCommands.Commands)
-        {
-            Debug.Print("Commande favorite: " + item.Name);
         }
     }
     public void SetData(VehicleDataResponse vehicleData)

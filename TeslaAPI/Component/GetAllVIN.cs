@@ -24,14 +24,9 @@ public class GetAllVIN
             // Make an API request to get the list of vehicles
 
             var response = await _httpClient.GetAsync("https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles");
-            Debug.Print("Response Content: " + await response.Content.ReadAsStringAsync());
-            Debug.Print($"Response: {response.Content}");
-            Debug.Print($"httpClient: {_httpClient.DefaultRequestHeaders}");
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
-                Debug.Print($"Response Content: {content}");
-
                 // Parse the JSON response into a JsonDocument
                 using (JsonDocument doc = JsonDocument.Parse(content))
                 {

@@ -58,8 +58,6 @@ namespace TeslaAPI.Component.Commands
             {
                 var vehicleStateContent = await vehicleStateResponse.Content.ReadAsStringAsync();
                 var vehicleData = JsonSerializer.Deserialize<VehicleDataResponse>(vehicleStateContent);
-                long? userId = vehicleData?.response?.user_id;
-                int? batteryLevel = vehicleData?.response?.charge_state.battery_level;
                 return vehicleData;
             }
             else

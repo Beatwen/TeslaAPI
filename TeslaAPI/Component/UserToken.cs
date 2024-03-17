@@ -32,7 +32,7 @@ namespace TeslaAPI.Component
             else
             {
                 Debug.Print("No Token Found in Local Storage and is valid" + token);
-                RedirectUser(navigationManager, jsRuntime);
+                //RedirectUser(navigationManager, jsRuntime);
                 return null;
             }
         }
@@ -81,9 +81,7 @@ namespace TeslaAPI.Component
                     {
                         var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
                         var responseAsObject = JsonSerializer.Deserialize<TokenResponse>(tokenJson);
-                        Debug.Print(tokenJson.ToString());
                         if (responseAsObject == null) { return null;}
-                        Debug.Print(responseAsObject.refresh_token);
                         string UserToken = responseAsObject.access_token;
                         await StoreToken(responseAsObject, jsRuntime);
                         return UserToken;

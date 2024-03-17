@@ -18,8 +18,6 @@ namespace TeslaAPI.Component
         }
         public static async Task Flash(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {
-
-            Debug.Print("vin =" + VIN);
             string URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/flash_lights";
             await NewhttpClient(VIN, URL, token, vehicleData);
         }
@@ -28,17 +26,14 @@ namespace TeslaAPI.Component
             bool onOff = false;
             if (vehicleData.response.vehicle_state.sentry_mode_available && vehicleData.response.vehicle_state.sentry_mode == false)
             {
-                Debug.Print("we want to set the sentry on");
                 onOff = true;
             }
             string URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/set_sentry_mode";
             string data = JsonSerializer.Serialize(new { on = onOff });
             var response = await NewhttpClient(VIN, URL, token, vehicleData, data);
-            if (response != null) { _=command.DisplayName == "SetSentryMode" ? command.DisplayName = "SetSentryModeOff" : command.DisplayName = "SetSentryModeOn"; }
         }
         public static async Task Unlock(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {
-            Debug.Print("Called Lock or unlock " + command.DisplayName + " command name : " + command.Name);
             string URL;
             if (vehicleData.response.vehicle_state.locked)
             {
@@ -57,16 +52,13 @@ namespace TeslaAPI.Component
         }
         public static async Task OpenChargePort(string VIN, string token, VehicleDataResponse vehicleData, Command command)
         {
-            Debug.Print("Called Lock or unlock " + command.DisplayName + " command name : " + command.Name);
             string URL;
             if (vehicleData.response.charge_state.charge_port_door_open)
             {
-                Debug.Print("Unlocking the car trap");
                 URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/charge_port_door_open";
             }
             else
             {
-                Debug.Print("Locking the car trap");
                 URL = $"https://fleet-api.prd.eu.vn.cloud.tesla.com/api/1/vehicles/{VIN}/command/charge_port_door_close";
             }
             var response = await NewhttpClient(VIN, URL, token, vehicleData);

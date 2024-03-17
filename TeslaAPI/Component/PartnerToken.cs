@@ -68,6 +68,7 @@
                     if (responseContent != null)
                     {
                         TokenResponse tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
+                        await StoreToken(tokenResponse);
                         return tokenResponse.access_token;
                     }
                     else
@@ -82,11 +83,9 @@
                 }
             }
         }
-        private static async Task StoreToken(TokenResponse tokenResponse, LocalStorageService localStorageService)
+        private static async Task StoreToken(TokenResponse tokenResponse)
         {
             File.WriteAllText("PartnerToken.json", JsonSerializer.Serialize(tokenResponse));
-            await localStorageService.SetItemAsync("PartnerToken", tokenResponse.access_token);
-            await localStorageService.SetItemAsync("PartnerTokenExpiresAt", DateTime.Now.AddSeconds(tokenResponse.expires_in));
         }
     }
 
