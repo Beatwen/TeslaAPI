@@ -25,11 +25,7 @@ namespace TeslaAPI.Component
                     {
                         domain = "cod-precious-elephant.ngrok-free.app"
                     };
-
-                    // Serialize the payload to JSON
                     var payloadJson = JsonSerializer.Serialize(payload);
-
-                     // Create an HttpClient instance
                      using (var httpClient = new HttpClient())
                      {
                          httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -52,13 +48,11 @@ namespace TeslaAPI.Component
                         }
                         catch (JsonException)
                         {
-                            // If the error response is not in JSON format, just print the raw content
                             Debug.Print("Error Response Content: " + errorResponseContent);
                         }
                     }
                     else
                     {
-                        // Handle other status codes or errors as needed
                         Debug.Print("Vehicle registration failed. Status code: " + (int)response.StatusCode);
                         Debug.Print(response.ReasonPhrase + response.Content.ReadAsStringAsync());
                     }

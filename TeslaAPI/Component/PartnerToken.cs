@@ -16,7 +16,7 @@
     {
         public static async Task<string?> GetPartnerToken(IJSRuntime jsRuntime)
         {
-            var filePath = "PartnerToken.json";
+            var filePath = "Data/PartnerToken.json";
             if (File.Exists(filePath))
             {
                 var jsonContent = File.ReadAllText(filePath);
@@ -43,7 +43,6 @@
         }
         static async Task<string?> GeneratePartnerToken()
         {
-            Debug.Print("Generating partner access token...");
             string clientId = "285b750b0c21-49a2-a9af-c44c1f100566";
             string clientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
             using (var httpClient = new HttpClient())
@@ -68,7 +67,7 @@
                     if (responseContent != null)
                     {
                         TokenResponse tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
-                        await StoreToken(tokenResponse);
+                        StoreToken(tokenResponse);
                         return tokenResponse.access_token;
                     }
                     else
@@ -78,14 +77,13 @@
                 }
                 else
                 {
-                    Debug.Print("Failed to obtain partner access token. Status code: " + response.StatusCode);
                     return null;
                 }
             }
         }
-        private static async Task StoreToken(TokenResponse tokenResponse)
+        private static void StoreToken(TokenResponse tokenResponse)
         {
-            File.WriteAllText("PartnerToken.json", JsonSerializer.Serialize(tokenResponse));
+            File.WriteAllText("Data/PartnerToken.json", JsonSerializer.Serialize(tokenResponse));
         }
     }
 
@@ -101,7 +99,6 @@
     {
         public string error_code { get; set; }
         public string error_description { get; set; }
-        // Add more properties if needed based on the API's error response structure
     }
 
 }
