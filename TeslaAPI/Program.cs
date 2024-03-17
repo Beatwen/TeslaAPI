@@ -35,27 +35,18 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 
-// Add a route for serving .pem files
+
 app.MapGet("/.well-known/appspecific/com.tesla.3p.public-key.pem", async context =>
 {
-    // Path to your public key file
     var publicKeyFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/.well-known/appspecific/com.tesla.3p.public-key.pem");
-    Debug.Print("public key file path : " + publicKeyFilePath);
     if (File.Exists(publicKeyFilePath))
     {
-        Debug.Print("Public key file found");
-        // Read the content of the .pem file
         var publicKeyContent = await File.ReadAllTextAsync(publicKeyFilePath);
-
-        // Set the content type header
         context.Response.Headers.Add("Content-Type", "application/x-pem-file");
-       // Write the .pem file content to the response
         await context.Response.WriteAsync(publicKeyContent);
     }
     else
     {
-        Debug.Print("Public key file not found");
-        // .pem file not found, return a 404 response
         context.Response.StatusCode = 404;
     }
 });

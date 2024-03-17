@@ -25,7 +25,7 @@
     private MudTheme Theme = new MudTheme();
     private List<string> TaskList = new();
     private string selected = "";
-    private async Task AddFavorite(string command)
+    public async Task AddFavorite(string command)
     {
         Command c = new() {Name = command};
         if (favoriteTasks.Commands.Any(c => c.Name == command))
