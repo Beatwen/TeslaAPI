@@ -27,7 +27,7 @@ namespace TeslaAPI.Component.Commands
                 while (!isVehicleAwake && attempts < maxAttempts)
                 {
                     attempts++;
-                    await Task.Delay(1000);
+                    await Task.Delay(2000);
                     var vehicleInfo = await GetVehicleInfo(vehicleVIN, userToken);
                     if (vehicleInfo != null)
                     {

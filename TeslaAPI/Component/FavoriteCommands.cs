@@ -11,7 +11,6 @@ namespace TeslaAPI.Component
                 "Flash",
                 "Unlock",
                 "OpenChargePort",
-                "CloseChargePort",
                 "StartHVAC",
                 "StopHVAC",
                 "SetChargeLimit",

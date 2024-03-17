@@ -7,10 +7,7 @@
     using System.Text.Json;
     using System.Threading.Tasks;
     using System.Diagnostics;
-    using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-    using TeslaAPI.Data;
     using Microsoft.JSInterop;
-    using Azure;
 
     public class PartnerToken
     {
@@ -38,13 +35,14 @@
         }
         static bool IsTokenStillValid(TokenResponse? tokenResponse)
         {
+            Debug.Print("Checking if token is still valid");
             var expiresAt = DateTime.Now.AddSeconds(tokenResponse.expires_in);
             return expiresAt > DateTime.Now;
         }
         static async Task<string?> GeneratePartnerToken()
         {
             string clientId = "285b750b0c21-49a2-a9af-c44c1f100566";
-            string clientSecret = "ta-secret.rTLXH7fIyZwU5PTf";
+            string clientSecret = Environment.GetEnvironmentVariable("TESLA_CLIENT_SECRET");
             using (var httpClient = new HttpClient())
             {
                 var tokenRequest = new
