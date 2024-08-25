@@ -1,0 +1,67 @@
+﻿@page "/oauth-callback"
+@using System.Net.Http;
+@using System.Text.Json;
+@using System.Net.Http.Headers;
+@using System.Threading.Tasks;
+@using System.Net;
+@using TeslaAPI.Component;
+@using System.Diagnostics;
+@using System.Text;
+@using IdentityModel;
+@using Microsoft.Extensions.DependencyInjection;
+@using Microsoft.JSInterop;
+@inject IJSRuntime jsRuntime;
+<h3>Tesla Control Test</h3>
+<button>Get Tesla Code</button>
+<p>@response</p>
+<button>Register Vehicles</button>
+<button>Get Tesla Tag</button>
+<button>Horn it up !</button>
+<p>@ShowVehicleTags</p>
+
+
+@code {
+    string vehicleTag;
+    string partnerToken;
+    string response = "Response will be shown here";
+    string ShowVehicleTags = "Tags will be shown here";
+    [Inject]
+    private NavigationManager? NavigationManager { get; set; }
+    private HttpClient _httpClient; // HttpClient instance for making API requests
+    string? userToken;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        Debug.Print("URI: " + uri);
+        var code = System.Web.HttpUtility.ParseQueryString(uri.Query).Get("code");
+        Debug.Print("Code: " + code);
+        if (!string.IsNullOrWhiteSpace(code))
+        {
+            Debug.Print("OAuth callback successful.");
+            userToken = await UserToken.GenerateUserToken(code,jsRuntime);
+
+            Debug.Print("le token " + userToken);
+            if (!string.IsNullOrWhiteSpace(userToken))
+            {
+                response = "Access Token: " + userToken;
+                Debug.Print("ouiii" + userToken);
+            }
+            else
+            {
+                response = "Token exchange failed.";
+            }
+        }
+        else
+        {
+            Debug.Print("OAuth callback failed.");
+            response = "Authorization failed or state mismatch.";
+        }
+
+        var GetTag = new GetAllVIN(userToken);
+        vehicleTag = await GetTag.GetVIN();
+        Debug.Print("vehicleVIN : " + vehicleTag);
+        UserToken.RedirectUserToIndex(NavigationManager, jsRuntime);
+    }
+}

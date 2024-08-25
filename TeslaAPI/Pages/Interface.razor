@@ -1,0 +1,45 @@
+﻿@page "/interface"
+@using System;
+@using System.Net.Http;
+@using System.Threading.Tasks;
+@using TeslaAPI.Component;
+@using System.Diagnostics;
+@using Data;
+@inject IJSRuntime jsRuntime;
+@inject NavigationManager NavigationManager;
+@inject FavoriteCommands favoriteTasks;
+
+<h3>Choose the commands you want to see in the home page</h3>
+<MudGrid>
+    @foreach (var item in favoriteTasks.BaseTasks)
+    {
+        var isSelected = favoriteTasks.Commands.Any(c => c.Name == item && c.Selected);
+        var Selected = isSelected ? "green darken-1" : "";
+        <MudItem xs="6" sm="3">
+            <MudButton @onclick="@(() => AddFavorite(@item))" Class="@($"d-flex align-center justify-center mud-width-full py-8 " + @Selected)">@item</MudButton>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private MudTheme Theme = new MudTheme();
+    private List<string> TaskList = new();
+    private string selected = "";
+    public async Task AddFavorite(string command)
+    {
+        Command c = new() {Name = command};
+        if (favoriteTasks.Commands.Any(c => c.Name == command))
+        {
+            favoriteTasks.Commands.RemoveAll(c => c.Name == command);
+            c.Selected = false;
+
+        }
+        else
+        {
+            favoriteTasks.Commands.Add(c);
+            c.Selected = true;
+        }
+        LocalStorageService localStorageService = new LocalStorageService(jsRuntime);
+        await localStorageService.SetItemAsync("FavCommands", favoriteTasks);
+    }
+}

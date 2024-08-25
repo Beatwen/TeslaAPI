@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>ffb81665-d2e0-46cc-b316-8341c1d0beea</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Component\Component.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Component\Component.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="7.0.15" />
+	<PackageReference Include="IdentityModel" Version="5.1.0" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.17" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.17" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.17">
+	  <PrivateAssets>all</PrivateAssets>
+	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	</PackageReference>
+	<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
+	<PackageReference Include="MudBlazor" Version="6.15.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Data\ClientID.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>
